@@ -1,5 +1,20 @@
 
 (function(){
+  // Freshness: Safari can reopen a saved copy of last week's report. On the always-latest
+  // address, ask GitHub (bypassing the cache) which report is newest and reload if we're behind.
+  function checkFresh(){
+    if(!/\/$/.test(location.pathname) || !window.SLATE) return;
+    fetch(location.pathname+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';})
+      .then(function(t){
+        var x=t.match(/window\.SLATE=\{"d":"(\d{4}-\d{2}-\d{2})"/);
+        if(x && x[1]>window.SLATE.d) location.replace(location.pathname+'?v='+x[1]+location.hash);
+      }).catch(function(){});
+  }
+  checkFresh();
+  window.addEventListener('pageshow',function(e){ if(e.persisted) checkFresh(); });
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) checkFresh(); });
+})();
+(function(){
   var KEY='nflpropsRec', LOG='nflpropsRecLog';
   function g(k){try{return localStorage.getItem(k);}catch(e){return null;}}
   function s(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
@@ -92,7 +107,7 @@
 
   // the model's parlays
   document.querySelectorAll('.ticket').forEach(function(t){
-    var idEl=t.querySelector('.id'); var x=idEl&&idEl.textContent.match(/(\d{8}-\d+L(?:-\d+)?)/);
+    var idEl=t.querySelector('.id'); var x=idEl&&idEl.textContent.match(/(\d{8}-\d+[LS](?:-\d+)?)/);
     if(!x) return;
     var bid=x[1];
     widget(t,{key:bid,odds:function(){return payout(t.querySelector('.fdpay'));},
